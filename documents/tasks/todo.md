@@ -10,15 +10,15 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 **Acceptance criteria:**
 
-- [ ] Repository contains an appropriate `.gitignore` and a safe configuration example where needed.
-- [ ] Credentials, certificates, local databases, dependency folders, and `.env` files are excluded.
-- [ ] The working tree contains only intentional project files.
+- [x] Repository contains an appropriate `.gitignore` and a safe configuration example where needed.
+- [x] Credentials, certificates, local databases, dependency folders, and `.env` files are excluded.
+- [x] The working tree contains only intentional project files.
 
 **Verification:**
 
-- [ ] Inspect ignored and tracked files with Git.
-- [ ] Inspect the staged diff before committing.
-- [ ] Explain why an ignored secret that was previously committed is still compromised.
+- [x] Inspect ignored and tracked files with Git.
+- [x] Inspect the staged diff before committing.
+- [x] Explain why an ignored secret that was previously committed is still compromised.
 
 **Dependencies:** None
 

@@ -1,0 +1,27 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+certificates/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Installed dependencies
+node_modules/
+
+# Generated build and test output
+dist/
+coverage/
+*.tsbuildinfo
+
+# Logs and local data
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
