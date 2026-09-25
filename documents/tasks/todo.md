@@ -1,8 +1,10 @@
-# Smart Home Lighting Rework - Month One Task List
+# Home Air-Conditioning Controller - Month One Task List
 
 Complete tasks in order. Work on only one task at a time. Do not mark a task complete until its acceptance criteria, verification, explain-back, and focused commit are complete.
 
 Commands marked `TBD` are chosen after the implementation stack is recorded in an ADR.
+
+Month-one scope is one simulated home and one temperature-controlled zone. Commands change simulated operating mode only; this is not a controller for physical HVAC equipment. Occupancy, schedules, live forecasts, multiple zones, and buildings are deferred.
 
 ## Task 1: Establish repository hygiene
 
@@ -26,18 +28,18 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 ## Task 2: Write the month-one problem statement
 
-**Description:** Describe the user/system problem, the single end-to-end outcome, non-goals, and measurable meaning of correctness and scalability.
+**Description:** Describe the homeowner's comfort/energy problem, the single-zone simulated outcome, non-goals, and measurable meaning of correctness. Define any workload measurement without claiming building-scale performance.
 
 **Acceptance criteria:**
 
-- [ ] Functional requirements describe observable behaviour without prescribing frameworks.
-- [ ] Non-functional requirements contain measurable or explicitly bounded expectations.
-- [ ] Month-one non-goals prevent Kubernetes, cloud, UI, and service-splitting scope creep.
+- [x] Functional requirements describe observable behaviour without prescribing frameworks.
+- [x] Non-functional requirements contain measurable or explicitly bounded expectations.
+- [x] Month-one non-goals prevent real hardware, live forecasts, multiple zones, Kubernetes, cloud, UI, and service-splitting scope creep.
 
 **Verification:**
 
-- [ ] Review `documents/requirements.md` against the plan.
-- [ ] Explain the difference between a requirement and an implementation choice.
+- [x] Review `documents/requirements.md` against the plan.
+- [x] Explain the difference between a requirement and an implementation choice.
 
 **Dependencies:** Task 1
 
@@ -45,17 +47,17 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 ## Task 3: Reconstruct the legacy architecture
 
-**Description:** Analyse the old 6.3D and 6.4HD systems to understand their data flow, state ownership, scaling model, and observed failures.
+**Description:** Analyse the old lighting submissions as historical evidence. Extract reusable event-processing lessons without treating the lighting rules or architecture as requirements for the new climate controller.
 
 **Acceptance criteria:**
 
 - [ ] Diagram identifies publishers, broker, subscribers, synchronous calls, state owners, and persistence writes.
-- [ ] Analysis explains MQTT fan-out, duplicate effects, the light-state race, and limitations of CPU-only scaling.
+- [ ] Analysis explains MQTT fan-out, duplicate effects, the old light-state race, and limitations of CPU-only scaling; it states which lessons transfer to the climate controller.
 - [ ] Claims distinguish observed evidence from hypotheses.
 
 **Verification:**
 
-- [ ] Walk through one sensor event from publication to command history.
+- [ ] Walk through one legacy sensor event from publication to command history, then explain how the new domain differs.
 - [ ] Explain why adding replicas may increase work instead of distributing it.
 
 **Dependencies:** Task 2
@@ -75,14 +77,14 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 **Acceptance criteria:**
 
-- [ ] Event contract includes event ID, device ID, light ID, timestamp, light measurement, and motion state.
+- [ ] Event contract includes event ID, sensor ID, zone ID, timestamp, and room temperature with units.
 - [ ] Structural and semantic validation rules are distinguishable.
-- [ ] Idempotency, state consistency, and command-history invariants are explicit.
+- [ ] Idempotency, timestamp-ordering policy, mutually exclusive HEAT/COOL modes, and transition-history invariants are explicit.
 
 **Verification:**
 
 - [ ] Review examples of valid, structurally invalid, and semantically invalid events.
-- [ ] Explain why a device ID is not necessarily a unique event ID.
+- [ ] Explain why a sensor ID is not necessarily a unique event ID.
 
 **Dependencies:** Task 3
 
@@ -90,7 +92,7 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 ## Task 5: Record initial architecture decisions
 
-**Description:** Compare reasonable options and select the month-one architecture, runtime, persistence technology, and local MQTT broker.
+**Description:** Record why TypeScript/Node.js serves the learning goal and select the month-one architecture, persistence technology, and local MQTT broker.
 
 **Acceptance criteria:**
 
@@ -129,14 +131,14 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 ## Task 7: Implement automation decisions with TDD
 
-**Description:** Implement pure business logic for deciding the desired light state from a validated reading.
+**Description:** Implement pure business logic for deciding the desired simulated operating mode from a validated room-temperature reading, comfort range, and current mode.
 
 **Acceptance criteria:**
 
-- [ ] Motion plus low light requests ON.
-- [ ] No motion requests OFF.
-- [ ] Sufficient ambient light requests OFF.
-- [ ] Boundary values and unsupported values have intentional behaviour.
+- [ ] Crossing the documented heating entry threshold requests HEAT.
+- [ ] Crossing the documented cooling entry threshold requests COOL.
+- [ ] Returning across the documented exit threshold requests OFF without rapid mode toggling.
+- [ ] Boundary values and direct HEAT-to-COOL behaviour are intentional and tested.
 
 **Verification:**
 
@@ -157,18 +159,18 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 ## Task 8: Model state transitions
 
-**Description:** Convert a desired state into either a real transition with command history or a no-change result.
+**Description:** Convert a desired mode into either a simulated mode transition with history or a no-change result.
 
 **Acceptance criteria:**
 
-- [ ] Unknown, ON, and OFF current states are handled intentionally.
-- [ ] A history record is produced only for an effective state change.
+- [ ] Unknown, OFF, HEAT, and COOL current modes are handled intentionally.
+- [ ] A history record is produced only for an effective mode change.
 - [ ] Transition reason and source event ID are retained.
 
 **Verification:**
 
-- [ ] Unit tests cover unknown-to-state, ON-to-OFF, OFF-to-ON, and unchanged cases.
-- [ ] Explain the difference between a sensor reading, decision, and command.
+- [ ] Unit tests cover unknown-to-mode, OFF-to-HEAT, HEAT-to-OFF, OFF-to-COOL, unchanged, and the selected direct-switch policy.
+- [ ] Explain the difference between a temperature reading, decision, and simulated command.
 
 **Dependencies:** Task 7
 
@@ -181,7 +183,7 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 **Acceptance criteria:**
 
 - [ ] Processed event identity has a single authoritative location.
-- [ ] Repeating an event produces no repeated business effect.
+- [ ] Repeating an event produces no repeated mode change or history entry.
 - [ ] The atomicity requirement covering event, state, and history is documented.
 
 **Verification:**
@@ -195,7 +197,7 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 ## Task 10: Implement the persistence adapter
 
-**Description:** Persist processed events, current state, and transition history using the selected database behind explicit application interfaces.
+**Description:** Persist processed events, current operating mode, and transition history using the selected database behind explicit application interfaces.
 
 **Acceptance criteria:**
 
@@ -206,7 +208,7 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 **Verification:**
 
 - [ ] Integration tests run against an isolated database.
-- [ ] Inspect stored current state and transition history for one scenario.
+- [ ] Inspect stored current mode and transition history for one scenario.
 - [ ] Explain what happens if persistence fails halfway through processing.
 
 **Dependencies:** Task 9
@@ -215,13 +217,13 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 ## Task 11: Prove concurrent behaviour
 
-**Description:** Reproduce simultaneous processing for the same light and prove the persistence design maintains its invariants.
+**Description:** Reproduce simultaneous processing for the same home unit and prove the persistence design maintains its invariants.
 
 **Acceptance criteria:**
 
 - [ ] Test starts concurrent operations rather than merely executing quickly in sequence.
-- [ ] Final current state and history remain internally consistent.
-- [ ] Any ordering limitation is documented instead of hidden.
+- [ ] Final current mode and history remain internally consistent; HEAT and COOL cannot both be active.
+- [ ] The policy for out-of-order readings is documented instead of hidden.
 
 **Verification:**
 
@@ -266,7 +268,7 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 **Acceptance criteria:**
 
-- [ ] Device count, interval, duration, and random seed are configurable.
+- [ ] Event interval, duration, and random seed are configurable for one simulated zone.
 - [ ] Events have unique IDs and valid timestamps.
 - [ ] The same seed and configuration reproduce the same logical sequence.
 
@@ -353,7 +355,7 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 **Acceptance criteria:**
 
-- [ ] Logs carry event ID, device ID, light ID, outcome, and elapsed time where relevant.
+- [ ] Logs carry event ID, sensor ID, zone ID, outcome, and elapsed time where relevant.
 - [ ] Counters distinguish attempted, accepted, rejected, duplicate, failed, and transitioned events.
 - [ ] Sensitive payloads and credentials are not logged.
 
@@ -373,14 +375,14 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 **Acceptance criteria:**
 
-- [ ] Plan defines device count, event rate, ramp, duration, and payload mix.
+- [ ] Plan defines event rate, ramp, duration, and payload mix for the single-zone simulation.
 - [ ] Measurements include throughput, latency percentiles, errors, duplicates, and resource use.
 - [ ] Machine and local-environment limitations are documented.
 
 **Verification:**
 
 - [ ] Mentor reviews the experiment before execution.
-- [ ] Explain why connected-client count alone is insufficient.
+- [ ] Explain why connected-client count alone is insufficient and why this test does not prove building-scale performance.
 
 **Dependencies:** Task 17
 
@@ -434,7 +436,7 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 - [ ] README explains purpose, architecture, setup, testing, measurements, and limitations.
 - [ ] ADR index and architecture diagram reflect the implementation.
-- [ ] Repository contains no secret, misleading scalability claim, dead generated code, or unexplained dependency.
+- [ ] Repository contains no secret, claim of safe physical HVAC control or building-scale performance, dead generated code, or unexplained dependency.
 
 **Verification:**
 
@@ -460,6 +462,10 @@ Commands marked `TBD` are chosen after the implementation stack is recorded in a
 
 Add ideas here without expanding the active month-one scope:
 
+- [ ] Add occupancy detection and time-of-day schedules with explicit stale-signal behaviour.
+- [ ] Evaluate live weather data only after the local control rule is stable.
+- [ ] Extend the model to multiple rooms, then consider building-level coordination.
+- [ ] Investigate real HVAC safety constraints with domain expertise before any hardware integration.
 - [ ] Evaluate service extraction using measured scaling/failure-isolation needs.
 - [ ] Compare shared MQTT subscriptions with a queue/consumer-group architecture.
 - [ ] Add bounded work queues, retry policy, and dead-letter handling.

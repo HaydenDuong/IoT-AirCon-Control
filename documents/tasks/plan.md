@@ -1,8 +1,8 @@
-# Implementation Plan: Smart Home Lighting System Rework
+# Implementation Plan: Home Air-Conditioning Controller
 
 ## Purpose
 
-This is a four-week, learning-first rebuild of the university IoT smart-lighting project. The objective is not to reproduce the old repository as quickly as possible. The objective is to build one small, correct, measurable system that the developer can explain and defend without assistance.
+This is a four-week, learning-first home air-conditioning project, informed by lessons from the earlier university IoT lighting submissions. The objective is not to reproduce their architecture or to control real HVAC hardware. The objective is to build one small, correct within stated assumptions, measurable simulated system that the developer can explain and defend without assistance.
 
 The developer remains the primary implementer. The mentor provides requirements, questions, hints, review, and explanations, but does not take over implementation.
 
@@ -11,15 +11,15 @@ The developer remains the primary implementer. The mentor provides requirements,
 At the end of four weeks, the repository should demonstrate this complete flow:
 
 ```text
-Sensor simulator
+Home temperature sensor simulator
     -> MQTT broker
-    -> validated sensor event
-    -> automation decision
-    -> idempotent light-state transition
-    -> persisted state and command history
+    -> validated room-temperature event
+    -> heating/cooling/off decision
+    -> idempotent mode transition
+    -> persisted mode and transition history
 ```
 
-The result should be locally reproducible, tested, documented, and measured. It should be suitable for a narrow and honest resume entry, but it is not expected to match every feature of the old 6.3D and 6.4HD submissions.
+The result should be locally reproducible, tested, documented, and measured. It models one home and one temperature-controlled zone. It may support a narrow and honest resume entry, but it does not claim to operate real equipment or prove building-scale performance.
 
 ## Time Budget
 
@@ -45,14 +45,15 @@ Suggested daily rhythm:
 - A deterministic sensor simulator.
 - A local MQTT broker.
 - A consumer that validates incoming events.
-- Explicit automation rules for light state decisions.
-- Persistent current light state.
+- Explicit rules for deciding OFF, HEAT, or COOL from room temperature and a homeowner-selected comfort range.
+- A documented deadband or hysteresis rule so small temperature changes do not repeatedly switch modes.
+- Persistent current operating mode for the simulated unit.
 - An append-only command or transition history.
 - Event IDs and idempotent duplicate handling.
-- Correct behaviour under concurrent events for the same light.
+- Correct behaviour under concurrent events for the same home unit.
 - Unit tests for domain rules.
 - Integration tests for persistence and one end-to-end flow.
-- Structured logs with correlation fields such as event ID, device ID, and light ID.
+- Structured logs with correlation fields such as event ID, sensor ID, and zone ID.
 - Docker Compose for reproducible local execution.
 - A controlled load test with honest measurements.
 - README setup instructions and short Architecture Decision Records.
@@ -62,6 +63,10 @@ Suggested daily rhythm:
 - A frontend.
 - User authentication and authorization.
 - Physical IoT hardware.
+- Real HVAC actuation or equipment-safety certification.
+- Multiple rooms, zones, or buildings.
+- Live weather-forecast integration.
+- Occupancy sensing and time-of-day schedules (later rule extensions).
 - Multiple cloud providers.
 - AWS deployment.
 - Four independently deployed microservices.
@@ -69,19 +74,19 @@ Suggested daily rhythm:
 - Prometheus and Grafana.
 - Artificial intelligence or predictive automation.
 - A claim of production readiness.
-- A target of 5,000 devices.
+- A device-count or building-scale performance claim.
 
-Kubernetes is a stretch goal only after all required correctness, testing, and documentation work is complete. The month does not fail if Kubernetes is absent.
+Kubernetes is post-month-one work, not a month-one success criterion.
 
 ## Behavioural Requirements
 
-1. A sensor can publish a reading containing an event ID, device ID, light ID, timestamp, ambient-light value, and motion state.
-2. The system rejects malformed or semantically invalid readings without changing light state.
-3. Motion detected in low ambient light requests the light to be on.
-4. No motion, or sufficient ambient light, requests the light to be off.
-5. A command-history record is created only when the effective light state changes.
+1. A simulated home sensor can publish a reading containing an event ID, sensor ID, zone ID, timestamp, and room temperature.
+2. The system accepts lower and upper comfort bounds representing homeowner preference; the first slice may use documented configuration rather than a UI.
+3. The system rejects malformed or semantically invalid readings without changing the operating mode.
+4. A valid reading crossing the documented heating or cooling entry threshold requests HEAT or COOL. The documented deadband or hysteresis rule determines when an active mode returns to OFF.
+5. A transition-history record is created only when the effective simulated mode changes.
 6. Processing the same event more than once produces the same final result and no duplicate command.
-7. Concurrent events must not corrupt current state or create an impossible transition history.
+7. Concurrent events must not corrupt current mode or create an impossible transition history. The policy for out-of-order timestamps must be explicit.
 8. The application shuts down without abandoning in-flight work beyond its documented delivery guarantee.
 9. Test and load-test results must distinguish attempted, accepted, rejected, duplicated, failed, and successfully processed events.
 
@@ -89,11 +94,13 @@ Kubernetes is a stretch goal only after all required correctness, testing, and d
 
 These statements must remain true regardless of framework or database choice:
 
-- A light has exactly one current effective state.
-- Command history describes actual state transitions, not every sensor reading.
+- The simulated air-conditioning unit has exactly one current effective mode: OFF, HEAT, or COOL.
+- HEAT and COOL are mutually exclusive.
+- Transition history describes mode changes, not every temperature reading.
 - An event ID identifies one logical sensor event.
 - Reprocessing an event ID cannot repeat its business effect.
 - Invalid input does not partially modify persistent state.
+- A small change near a comfort boundary does not cause uncontrolled rapid switching under the documented rule.
 - Infrastructure code does not contain the automation rules.
 - Domain logic can be tested without starting MQTT, Docker, or a database.
 - A passing health endpoint does not by itself prove that event processing is correct.
@@ -117,7 +124,7 @@ MQTT adapter -> Ingestion application service -> Automation domain logic
 
 This is an initial direction, not an unquestionable answer. The developer must document why it is appropriate for month one and what evidence would justify extracting a service later.
 
-Technology choices are deliberately not finalised in this plan. During Week 1, the developer will compare the smallest reasonable options and record the decision in an ADR. The default recommendation is a local MQTT broker first; AWS IoT Core can be reconsidered after correctness is established locally.
+TypeScript/Node.js is the chosen learning direction, but libraries, persistence technology, and MQTT broker are not finalised. During Week 1, the developer will record the smallest defensible choices in ADRs. AWS IoT Core can be reconsidered only after correctness is established locally.
 
 ## Project-Wide Definition of Done
 
@@ -166,11 +173,12 @@ Goal: replace assumptions with explicit requirements, invariants, and a defensib
 
 Deliverable: clean repository foundation and agreed learning contract.
 
-#### Day 2 - Reconstruct and critique the legacy system
+#### Day 2 - Extract reusable lessons from the legacy system
 
-- Draw the 6.3D and 6.4HD event flows from memory, then verify them against the documents/code.
+- Sketch the 6.3D and 6.4HD event flows, then verify them against the documents/code.
 - Identify trust boundaries, state owners, synchronous calls, MQTT subscriptions, and persistence writes.
-- Explain the fan-out, duplicate-processing, read-before-write race, and weak autoscaling-signal risks.
+- Explain which fan-out, duplicate-processing, read-before-write race, and autoscaling-signal lessons transfer to a home climate controller.
+- Do not copy lighting-specific domain rules into the new requirements.
 
 Deliverable: `documents/legacy-analysis.md` and one architecture diagram.
 
@@ -186,20 +194,20 @@ Deliverable: `documents/requirements.md`.
 #### Day 4 - Architecture and technology decisions
 
 - Compare modular monolith versus immediate microservices.
-- Compare the candidate language/runtime options.
+- Record why TypeScript/Node.js serves the learning goal and what runtime or library choices remain open.
 - Compare persistence options for atomic transition and idempotency requirements.
 - Select a local MQTT broker and explain why cloud integration is deferred.
 
 Deliverables: ADRs for architecture, implementation stack, and persistence.
 
-#### Day 5 - First vertical slice in tests
+#### Day 5 - First climate-control decision in tests
 
 - Scaffold only what is needed to execute tests.
-- Write the first failing examples for automation decisions.
+- Write the first failing examples for OFF/HEAT/COOL decisions.
 - Implement the minimum pure domain logic needed to pass them.
 - Refactor names and boundaries only after the tests pass.
 
-Checkpoint: the automation decision can be demonstrated entirely in tests without infrastructure.
+Checkpoint: a mode decision can be demonstrated entirely in tests without infrastructure.
 
 ### Week 2: Make State Changes Correct
 
@@ -211,11 +219,12 @@ Goal: implement and prove the core behaviour before introducing MQTT.
 - Separate structural validation from business rules.
 - Test missing identifiers, invalid values, and timestamp assumptions.
 
-#### Day 7 - State-transition model
+#### Day 7 - Operating-mode transition model
 
-- Model current state and transition history.
-- Ensure unchanged desired state produces no command.
-- Test unknown-to-off, off-to-on, on-to-off, and no-change cases.
+- Model current mode and transition history.
+- Ensure an unchanged desired mode produces no command.
+- Test unknown-to-mode, OFF-to-HEAT, HEAT-to-OFF, OFF-to-COOL, and no-change cases.
+- Test the selected deadband/hysteresis boundaries and direct HEAT-to-COOL policy.
 
 #### Day 8 - Idempotency
 
@@ -231,7 +240,7 @@ Goal: implement and prove the core behaviour before introducing MQTT.
 
 #### Day 10 - Concurrency and checkpoint
 
-- Write a reproducible concurrent-event test for one light.
+- Write a reproducible concurrent-event test for one simulated home unit.
 - Gather evidence of any race before changing code.
 - Implement the smallest defensible correction.
 - Review the complete Week 2 diff.
@@ -250,7 +259,7 @@ Goal: connect real asynchronous infrastructure without moving business rules int
 
 #### Day 12 - Deterministic sensor simulator
 
-- Create configurable device count, interval, seed, and run duration.
+- Create configurable event interval, seed, and run duration for one simulated zone.
 - Generate valid and intentionally invalid events.
 - Ensure a test run can be reproduced from the same seed.
 
@@ -283,7 +292,7 @@ Goal: obtain honest evidence and prepare a repository that can withstand intervi
 
 #### Day 16 - Observability for questions we actually have
 
-- Add structured fields needed to trace an event through the system.
+- Add structured fields needed to trace a temperature event through the system.
 - Define counters for attempted, accepted, rejected, duplicate, failed, and transitioned events.
 - Avoid installing a large monitoring stack unless simple instrumentation is insufficient.
 
@@ -291,7 +300,7 @@ Goal: obtain honest evidence and prepare a repository that can withstand intervi
 
 - Write the hypothesis before running the test.
 - Define workload, ramp pattern, duration, success criteria, and machine limitations.
-- Separate connected clients from events per second.
+- Separate connected clients from events per second; do not present a one-home workload as building-scale proof.
 - Capture throughput, latency percentiles, errors, duplicates, and resource usage.
 
 #### Day 18 - Baseline and bottleneck investigation
@@ -313,7 +322,7 @@ Goal: obtain honest evidence and prepare a repository that can withstand intervi
 - Run the full quality gate.
 - Review repository history and remove misleading claims or generated clutter.
 - Finish README, architecture diagram, ADR index, and test/load-test instructions.
-- Explain the architecture, invariants, failure modes, measurements, and next scaling step without notes.
+- Explain the architecture, mode-transition invariants, failure modes, measurements, and next scaling step without notes.
 - Decide whether the evidence is sufficient for a resume entry.
 
 Checkpoint: the month-one system is correct within its stated guarantees, reproducible, measured, documented, and explainable.
@@ -331,7 +340,7 @@ Checkpoint: the month-one system is correct within its stated guarantees, reprod
 
 - Duplicate delivery is tested.
 - Concurrent processing is tested.
-- Current state and transition history remain consistent.
+- Current mode and transition history remain consistent.
 - Database integration tests are reproducible.
 
 ### End of Week 3
@@ -353,19 +362,23 @@ Checkpoint: the month-one system is correct within its stated guarantees, reprod
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Recreating the old architecture before understanding it | High | Start with invariants and a modular monolith; require an ADR before splitting services. |
+| Copying the old lighting architecture into a different domain | High | Extract reusable failure lessons, then derive climate-control requirements independently. |
+| Treating simulated commands as safe physical HVAC control | High | Keep real actuation out of scope and label the simulator's guarantees honestly. |
+| Temperature noise causing rapid mode changes | High | Define and test deadband or hysteresis before persistence and MQTT. |
 | Adding Kubernetes to satisfy a resume keyword | High | Treat Kubernetes as post-month-one work unless all required gates pass early. |
 | Mentor writes too much implementation | High | Developer proposes and implements first; use the assistance ladder. |
 | Spending days choosing tools | Medium | Time-box comparisons and choose the simplest option satisfying the invariants. |
 | Tests are postponed | High | Behaviour changes are incomplete until the relevant automated test exists. |
-| Load testing measures only client count | High | Measure event rate, latency, errors, loss, duplication, and resource use. |
+| Load testing measures only client count | High | Measure event rate, latency, errors, loss, duplication, and resource use; avoid extrapolating to buildings. |
 | Secrets enter version control | High | Add ignore rules immediately and inspect staged changes before every commit. |
 | Four-to-five-hour sessions cause fatigue | Medium | Use focused blocks, stop at one completed slice, and keep two rest days. |
 | Scope expands during the month | High | Add ideas to a post-month-one backlog; do not insert them into the active task list. |
 
 ## Open Questions for Week 1
 
-- Which language/runtime will best serve the learning goal: TypeScript/Node.js or C#/.NET?
+- Which TypeScript runtime, test runner, and validation approach keep the first domain test simple?
+- What should happen to old or out-of-order room-temperature readings?
+- How should hysteresis and a direct HEAT-to-COOL change behave in the simulated controller?
 - Which persistence technology best demonstrates the required atomic and idempotent behaviour without unnecessary complexity?
 - What MQTT QoS and delivery assumptions will month one support?
 - What is the smallest meaningful workload for the first benchmark?
@@ -377,6 +390,10 @@ These questions should be resolved through short written decisions, not informal
 
 Only consider these after the final checkpoint:
 
+- Add occupancy and time-of-day rules, with tests for missing or stale signals.
+- Evaluate live weather forecasts, including provider failure and stale data.
+- Extend from one home zone to multiple rooms and then buildings.
+- Evaluate real-equipment constraints separately with appropriate domain expertise.
 - Extract services where independent scaling or failure isolation is justified.
 - Introduce shared MQTT subscription groups or a queue/consumer-group architecture.
 - Add retry policies, bounded queues, backpressure, and dead-letter handling.
