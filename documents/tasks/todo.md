@@ -472,4 +472,3 @@ Add ideas here without expanding the active month-one scope:
 - [ ] Add Kubernetes only after defining what behaviour it should improve.
 - [ ] Compare workload-driven autoscaling with CPU-based HPA.
 - [ ] Evaluate AWS IoT Core after local correctness and workload modelling are stable.
-
