@@ -51,14 +51,14 @@ Month-one scope is one simulated home and one temperature-controlled zone. Comma
 
 **Acceptance criteria:**
 
-- [ ] Diagram identifies publishers, broker, subscribers, synchronous calls, state owners, and persistence writes.
-- [ ] Analysis explains MQTT fan-out, duplicate effects, the old light-state race, and limitations of CPU-only scaling; it states which lessons transfer to the climate controller.
-- [ ] Claims distinguish observed evidence from hypotheses.
+- [x] Diagram identifies publishers, broker, subscribers, synchronous calls, state owners, and persistence writes.
+- [x] Analysis explains MQTT fan-out, duplicate effects, the old light-state race, and limitations of CPU-only scaling; it states which lessons transfer to the climate controller.
+- [x] Claims distinguish observed evidence from hypotheses.
 
 **Verification:**
 
-- [ ] Walk through one legacy sensor event from publication to command history, then explain how the new domain differs.
-- [ ] Explain why adding replicas may increase work instead of distributing it.
+- [x] Walk through one legacy sensor event from publication to command history, then explain how the new domain differs.
+- [x] Explain why adding replicas may increase work instead of distributing it.
 
 **Dependencies:** Task 2
 
@@ -66,10 +66,10 @@ Month-one scope is one simulated home and one temperature-controlled zone. Comma
 
 ## Checkpoint A: Problem understanding
 
-- [ ] Tasks 1-3 satisfy their acceptance criteria.
-- [ ] No application implementation has started.
-- [ ] Developer can explain what was wrong with the old system without reading the report.
-- [ ] Review with mentor before proceeding.
+- [x] Tasks 1-3 satisfy their acceptance criteria.
+- [x] Plan deviation recorded: the NestJS scaffold and first pure-domain decision slice were implemented before Checkpoint A was closed; no MQTT, persistence, or other infrastructure implementation began.
+- [x] Developer can explain what was wrong with the old system without reading the report.
+- [x] Review with mentor before proceeding.
 
 ## Task 4: Define the event contract and invariants
 
@@ -115,15 +115,15 @@ Month-one scope is one simulated home and one temperature-controlled zone. Comma
 
 **Acceptance criteria:**
 
-- [ ] Build and test commands are documented.
-- [ ] One intentionally failing automation-rule test demonstrates the test harness.
-- [ ] No MQTT or database dependency is required for the test.
+- [x] Build and test commands are documented.
+- [x] One intentionally failing automation-rule test demonstrates the test harness.
+- [x] No MQTT or database dependency is required for the test.
 
 **Verification:**
 
-- [ ] Tests initially fail for the expected reason.
-- [ ] Build succeeds: `TBD`.
-- [ ] Tests run: `TBD`.
+- [x] Tests initially fail for the expected reason.
+- [x] Build succeeds: npm run build.
+- [x] Tests run: npm test.
 
 **Dependencies:** Task 5
 
@@ -135,10 +135,10 @@ Month-one scope is one simulated home and one temperature-controlled zone. Comma
 
 **Acceptance criteria:**
 
-- [ ] Crossing the documented heating entry threshold requests HEAT.
-- [ ] Crossing the documented cooling entry threshold requests COOL.
-- [ ] Returning across the documented exit threshold requests OFF without rapid mode toggling.
-- [ ] Boundary values and direct HEAT-to-COOL behaviour are intentional and tested.
+- [x] Crossing the documented heating entry threshold requests HEAT.
+- [x] Crossing the documented cooling entry threshold requests COOL.
+- [x] Returning across the documented exit threshold requests OFF without rapid mode toggling.
+- [x] Boundary values and direct HEAT-to-COOL behaviour are intentional and tested.
 
 **Verification:**
 
