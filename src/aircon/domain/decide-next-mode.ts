@@ -14,6 +14,9 @@ export interface DecideNextModeInput {
 export function decideNextMode(input: DecideNextModeInput): AirconMode {
   const heatingEntryThresholdC = input.comfortRange.lowerC - 2;
   const coolingEntryThresholdC = input.comfortRange.upperC + 2;
+  const stopTargetC = Math.round(
+    (input.comfortRange.lowerC + input.comfortRange.upperC) / 2,
+  );
 
   if (
     input.currentMode === 'OFF' &&
@@ -27,6 +30,14 @@ export function decideNextMode(input: DecideNextModeInput): AirconMode {
     input.roomTemperatureC > coolingEntryThresholdC
   ) {
     return 'COOL';
+  }
+
+  if (input.currentMode === 'HEAT' && input.roomTemperatureC >= stopTargetC) {
+    return 'OFF';
+  }
+
+  if (input.currentMode === 'COOL' && input.roomTemperatureC <= stopTargetC) {
+    return 'OFF';
   }
 
   return input.currentMode;
