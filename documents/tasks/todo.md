@@ -77,14 +77,14 @@ Month-one scope is one simulated home and one temperature-controlled zone. Comma
 
 **Acceptance criteria:**
 
-- [ ] Event contract includes event ID, sensor ID, zone ID, timestamp, and room temperature with units.
-- [ ] Structural and semantic validation rules are distinguishable.
-- [ ] Idempotency, timestamp-ordering policy, mutually exclusive HEAT/COOL modes, and transition-history invariants are explicit.
+- [x] Event contract includes event ID, sensor ID, zone ID, timestamp, and room temperature with units.
+- [x] Structural and semantic validation rules are distinguishable.
+- [x] Idempotency, timestamp-ordering policy, mutually exclusive HEAT/COOL modes, and transition-history invariants are explicit.
 
 **Verification:**
 
-- [ ] Review examples of valid, structurally invalid, and semantically invalid events.
-- [ ] Explain why a sensor ID is not necessarily a unique event ID.
+- [x] Review examples of valid, structurally invalid, and semantically invalid events.
+- [x] Explain why a sensor ID is not necessarily a unique event ID.
 
 **Dependencies:** Task 3
 
@@ -142,8 +142,8 @@ Month-one scope is one simulated home and one temperature-controlled zone. Comma
 
 **Verification:**
 
-- [ ] Focused unit tests pass: `TBD`.
-- [ ] Mutation of input is absent or explicitly justified.
+- [x] Focused unit tests pass: `npm test -- src/aircon/domain/decide-next-mode.spec.ts`.
+- [x] Mutation of input is absent; the function reads its input and returns a mode value.
 - [ ] Explain why this logic belongs outside the MQTT consumer.
 
 **Dependencies:** Task 6
@@ -163,13 +163,13 @@ Month-one scope is one simulated home and one temperature-controlled zone. Comma
 
 **Acceptance criteria:**
 
-- [ ] Unknown, OFF, HEAT, and COOL current modes are handled intentionally.
-- [ ] A history record is produced only for an effective mode change.
-- [ ] Transition reason and source event ID are retained.
+- [x] The initial-state policy is explicit: a new zone starts in `OFF`; missing state for an existing zone is an error rather than an implicit fallback. `OFF`, `HEAT`, and `COOL` transitions are handled intentionally.
+- [x] A history record is produced only for an effective mode change.
+- [x] Transition reason and source event ID are retained.
 
 **Verification:**
 
-- [ ] Unit tests cover unknown-to-mode, OFF-to-HEAT, HEAT-to-OFF, OFF-to-COOL, unchanged, and the selected direct-switch policy.
+- [x] Unit tests cover `OFF`-to-`HEAT`, `HEAT`-to-`OFF`, `OFF`-to-`COOL`, `COOL`-to-`OFF`, unchanged mode, and both forbidden direct reversals. New-zone initialisation is deliberately handled by the `OFF` initial-state policy rather than an unknown-to-mode transition.
 - [ ] Explain the difference between a temperature reading, decision, and simulated command.
 
 **Dependencies:** Task 7
